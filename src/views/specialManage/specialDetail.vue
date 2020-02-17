@@ -20,71 +20,68 @@
     <template v-if="editpanel">
       <div class="edit">
         <el-form :model="form"
-                 :rules="rules"
                  label-width="90px"
                  ref="form">
 
           <el-form-item label="专题名称"
-                        prop="orgname">
+                        prop="titile">
             <el-input placeholder="请填写单位名称"
-                      v-model="form.orgname"></el-input>
+                      v-model="form.titile"></el-input>
           </el-form-item>
 
-          <el-form-item label="专题类型"
-                        prop="orgsitecode">
-            <el-select @change="currentSite"
-                       placeholder="请选择"
-                       v-model="form.orgsitecode">
-              <el-option :key="item.value"
-                         :label="item.label"
-                         :value="item.value"
-                         v-for="item in orgsiteOptions"></el-option>
+          <el-form-item>
+            <el-select placeholder="专题类型"
+                       v-model="form.projectType">
+              <el-option :key="item.code"
+                         :label="item.name"
+                         :value="item.code"
+                         v-for="item in projectTypes"></el-option>
             </el-select>
           </el-form-item>
 
           <el-form-item label="时间范围">
             <el-col :span="11">
-              <el-form-item prop="validdate">
+              <el-form-item prop="startTime">
                 <el-date-picker type="date"
                                 placeholder="选择开始日期"
-                                v-model="form.validdate"
+                                v-model="form.startTime"
                                 style="width: 100%;"></el-date-picker>
               </el-form-item>
             </el-col>
             <el-col class="line"
                     :span="2">-</el-col>
             <el-col :span="11">
-              <el-form-item prop="expiretime">
+              <el-form-item prop="endTime">
                 <el-date-picker type="date"
                                 placeholder="选择结束日期"
-                                v-model="form.expiretime"
+                                v-model="form.endTime"
                                 style="width: 100%;"></el-date-picker>
               </el-form-item>
             </el-col>
           </el-form-item>
 
           <el-form-item label="专题地点"
-                        prop="orgaddress">
+                        prop="siteWrite">
             <el-input placeholder="请填写单位地址"
-                      v-model="form.orgaddress"></el-input>
+                      v-model="form.siteWrite"></el-input>
           </el-form-item>
 
           <el-form-item label="专题简介"
-                        prop="orgdes">
+                        prop="description">
             <el-input :autosize="{ minRows: 5, maxRows: 10}"
                       placeholder="请填写专题简介"
                       type="textarea"
-                      v-model="form.orgdes"></el-input>
+                      v-model="form.description"></el-input>
           </el-form-item>
           <el-form-item label="封面图片"
-                        prop="imageUrl">
+                        prop="url">
             <el-upload class="avatar-uploader"
                        action="https://jsonplaceholder.typicode.com/posts/"
                        :show-file-list="false"
                        :on-success="handleAvatarSuccess"
                        :before-upload="beforeAvatarUpload">
-              <img v-if="imageUrl"
-                   :src="form.imageUrl"
+              <img v-if="form.url"
+                   :src="form.url"
                    class="avatar">
               <i v-else
                  class="el-icon-plus avatar-uploader-icon"></i>
@@ -105,29 +102,29 @@
       <div class="content-style">
         <el-row>
           <label class="label-style">专题名称:</label>
-          <span>我的生活{{this.data.orgname}}</span>
+          <span>{{this.data.titile}}</span>
         </el-row>
         <el-row>
           <label class="label-style">专题类型:</label>
-          <span>{{this.data.shortname}}</span>
+          <span>{{this.data.projectType}}</span>
         </el-row>
         <el-row>
           <label class="label-style">时间范围:</label>
-          <span>{{this.data.validdate | dateformat}}</span>
-          <span>{{'-'+this.data.expiretime | dateformat}}</span>
+          <span>{{this.data.startTime}}</span>
+          <span>{{'-'+this.data.endTime}}</span>
         </el-row>
         <el-row>
           <label class="label-style">专题地点:</label>
-          <span>{{this.data.orgaddress}}</span>
+          <span>{{this.data.siteWrite}}</span>
         </el-row>
         <el-row>
           <label class="label-style">专题简介:</label>
-          <pre>{{this.data.orgdes}}</pre>
+          <pre>{{this.data.description}}</pre>
         </el-row>
         <el-row>
           <label class="label-style">封面图片:</label>
-          <img v-if="imageUrl"
-               :src="form.imageUrl"
+          <img v-if="data.url"
+               :src="data.url"
                class="avatar">
         </el-row>
       </div>
@@ -141,53 +138,8 @@ export default {
   data () {
     return {
       toDetail: {},
-      form: {
-        uuid: '',
-        isused: '1',
-        orgsite: '',
-        orgsitecode: '',
-        porgid: this.porgid,
-        porgname: this.porgname,
-        orgtype: '1',
-        orgname: '',
-        shortname: '',
-        orgcode: '',
-        liableuser: '',
-        validdate: '',
-        expiretime: '',
-        orgemail: '',
-        orgaddress: '',
-        orgdes: '',
-        holding: '0',
-        imageUrl: ''
-      },
-      data: {
-        uuid: '',
-        isused: '1',
-        orgsite: '',
-        orgsitecode: '',
-        porgid: this.porgid,
-        porgname: this.porgname,
-        orgtype: '1',
-        orgname: '',
-        shortname: '',
-        orgcode: '',
-        liableuser: '',
-        validdate: '',
-        expiretime: '',
-        orgemail: '',
-        orgaddress: '',
-        orgdes: '',
-        holding: '0',
-        imageUrl: ''
-      },
-      rules: {},
-      orgsiteOptions: [],
-      orgTree: [],
-      defaultProps: {
-        children: 'children',
-        label: 'label'
-      },
+      form: { id: '', titile: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', url: '' },
+      data: { id: '', titile: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', url: '' },
       editpanel: false,
       editicon: false,
       // 开始时间
@@ -271,26 +223,6 @@ export default {
       this.editpanel = true
       this.editicon = false
       this.form = JSON.parse(JSON.stringify(this.data)) // clone到form，避免双向绑定
-      this.getOrgTree()
-      this.getProvinceList()
-    },
-
-    // 获取省份列表
-    getProvinceList () {
-      this.$axios
-        .post('api/base/loadcascader', { typecode: 'SSSF' })
-        .then(res => {
-          if (res.data.code === 0) {
-            this.orgsiteOptions = res.data.data
-          }
-        })
-    },
-    // 确定省份
-    currentSite (selVal) {
-      const selOrgSiteObj = this.orgsiteOptions.filter(
-        item => item.value === selVal
-      )
-      this.form.orgsite = selOrgSiteObj[0].label
     }
   },
   mounted () {
