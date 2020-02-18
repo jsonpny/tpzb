@@ -26,16 +26,16 @@
           <el-form-item label="专题名称"
                         prop="titile">
             <el-input placeholder="请填写单位名称"
-                      v-model="form.titile"></el-input>
+                      v-model="form.title"></el-input>
           </el-form-item>
 
-          <el-form-item>
+          <el-form-item label="专题类型">
             <el-select placeholder="专题类型"
                        v-model="form.projectType">
               <el-option :key="item.code"
                          :label="item.name"
                          :value="item.code"
-                         v-for="item in projectTypes"></el-option>
+                         v-for="item in this.$store.state.projectTypes"></el-option>
             </el-select>
           </el-form-item>
 
@@ -43,6 +43,7 @@
             <el-col :span="11">
               <el-form-item prop="startTime">
                 <el-date-picker type="date"
+                                value-format="yyyy-MM-dd"
                                 placeholder="选择开始日期"
                                 v-model="form.startTime"
                                 style="width: 100%;"></el-date-picker>
@@ -53,6 +54,7 @@
             <el-col :span="11">
               <el-form-item prop="endTime">
                 <el-date-picker type="date"
+                                value-format="yyyy-MM-dd"
                                 placeholder="选择结束日期"
                                 v-model="form.endTime"
                                 style="width: 100%;"></el-date-picker>
@@ -76,10 +78,9 @@
           <el-form-item label="封面图片"
                         prop="url">
             <el-upload class="avatar-uploader"
-                       action="https://jsonplaceholder.typicode.com/posts/"
+                       action="/api/tpictools/uploadprojectmanage"
                        :show-file-list="false"
-                       :on-success="handleAvatarSuccess"
-                       :before-upload="beforeAvatarUpload">
+                       :on-success="handleAvatarSuccess">
               <img v-if="form.url"
                    :src="form.url"
                    class="avatar">
@@ -102,7 +103,7 @@
       <div class="content-style">
         <el-row>
           <label class="label-style">专题名称:</label>
-          <span>{{this.data.titile}}</span>
+          <span>{{this.data.title}}</span>
         </el-row>
         <el-row>
           <label class="label-style">专题类型:</label>
@@ -124,7 +125,7 @@
         <el-row>
           <label class="label-style">封面图片:</label>
           <img v-if="data.url"
-               :src="data.url"
+               src="/api/idcardImgs/加油武汉.jpg"
                class="avatar">
         </el-row>
       </div>
@@ -138,80 +139,64 @@ export default {
   data () {
     return {
       toDetail: {},
-      form: { id: '', titile: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', url: '' },
-      data: { id: '', titile: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', url: '' },
+      searchParam: { pageNum: 1, pageSize: 10, data: { startTime: '', endTime: '', projectType: '', status: '', title: '', id: '' } },
+      form: { id: '', title: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', pictureName: '', url: '/api/idcardImgs/e9fed86e-03b0-45e0-990b-04458a3cffb8QQ图片20200211152410.png' },
+      data: { id: '', title: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', pictureName: '', url: '/api/idcardImgs/加油武汉.jpg' },
       editpanel: false,
-      editicon: false,
-      // 开始时间
-      starttime: {
-        disabledDate: time => {
-          if (this.form.expiretime) {
-            return (
-              time.getTime() >
-              this.$utils.formatteNewDate(this.form.expiretime).getTime()
-            )
-          }
-        }
-      },
-      // 结束时间
-      endTime: {
-        disabledDate: time => {
-          if (this.form.validdate) {
-            return (
-              time.getTime() <
-              this.$utils.formatteNewDate(this.form.validdate).getTime()
-            )
-          }
-        }
-      }
-
+      editicon: false
     }
   },
   methods: {
-    // 图片上传
     handleAvatarSuccess (res, file) {
-      this.form.imageUrl = URL.createObjectURL(file.raw)
-    },
-    beforeAvatarUpload (file) {
-      const isJPG = file.type === 'image/jpeg'
-      const isLt2M = file.size / 1024 / 1024 < 2
-
-      if (!isJPG) {
-        this.$message.error('上传头像图片只能是 JPG 格式!')
-      }
-      if (!isLt2M) {
-        this.$message.error('上传头像图片大小不能超过 2MB!')
-      }
-      return isJPG && isLt2M
+      this.form.url = URL.createObjectURL(file.raw)
+      this.form.pictureName = file.raw.name
     },
     // 保存 信息
     formOnSubmit () {
-      if (this.form.porgname === '无') this.form.porgname = null
-      this.$refs.form.validate(valid => {
-        if (valid) {
-          this.$axios
-            .post('/api' + this.$route.path + 'save', this.form)
-            .then(res => {
-              if (res.data.code === 0) {
-                this.data = JSON.parse(JSON.stringify(this.form))
-                this.data.uuid = this.form.uuid = res.data.data
-                this.$emit('upInstid', res.data.data, this.data.orgname)
-                this.editpanel = false
-                this.editicon = true
-              }
-            })
-        }
-      })
+      if (this.form.id) {
+        // 编辑
+        this.$axios
+          .post('/api/tpictools/updateprojectmanage', this.form)
+          .then(res => {
+            if (res.data.code === '200') {
+              this.data = JSON.parse(JSON.stringify(this.form))
+              this.$message({
+                message: '编辑成功',
+                type: 'success'
+              })
+              this.editpanel = false
+              this.editicon = true
+            }
+          })
+      } else {
+        // 新增
+        delete this.form.id
+        this.$axios
+          .post('/api/tpictools/addprojectmanage', this.form)
+          .then(res => {
+            if (res.data.code === '200') {
+              this.data = JSON.parse(JSON.stringify(this.form))
+              this.data.id = this.form.id = res.data.data
+              this.$message({
+                message: '新增成功',
+                type: 'success'
+              })
+              this.editpanel = false
+              this.editicon = true
+            }
+          })
+      }
     },
     // 查询某个机构信息
-    getOrgBaseinfo () {
-      this.$axios
-        .post('/api' + this.$route.path + 'baseinfo', { uuid: this.instid })
-        .then(res => {
-          if (res.data.code === 0) {
-            this.data = res.data.data
-          }
-        })
+    getBaseinfo () {
+      this.$axios.post('/api/tpictools/projectmanagelist', this.searchParam).then(res => {
+        if (res.data.code === '200') {
+          const { id, title, projectType, startTime, endTime, siteWrite, description, pictureName, url } = res.data.data.list[0]
+          this.data = { id, title, projectType, startTime, endTime, siteWrite, description, pictureName, url }
+          this.data.startTime = this.$moment(this.data.startTime).format('YYYY-MM-DD')
+          this.data.endTime = this.$moment(this.data.endTime).format('YYYY-MM-DD')
+        }
+      })
     },
     // 取消 保存单位信息
     formOnCancle () {
@@ -227,6 +212,7 @@ export default {
   },
   mounted () {
     this.toDetail = JSON.parse(sessionStorage.getItem('toDetail'))
+
     // 新增/编辑--编辑按钮展示
     if (this.toDetail.actpoint === 'edit') {
       this.editicon = true
@@ -237,7 +223,8 @@ export default {
       this.edit()
     } else {
       // 编辑--查看页展示
-      this.getOrgBaseinfo()
+      this.searchParam.data.id = this.toDetail.instid
+      this.getBaseinfo()
     }
   }
 }
@@ -312,6 +299,10 @@ export default {
         width: calc(100% - 92px);
         float: right;
         padding-top: 11px;
+      }
+      img {
+        width: 178px;
+        height: 178px;
       }
     }
   }
