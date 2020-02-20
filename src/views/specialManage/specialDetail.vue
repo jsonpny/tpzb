@@ -1,17 +1,5 @@
 <template>
   <div class="special-detail">
-    <!-- <el-row>
-      <div class="title">
-        <span>专题基本信息</span>
-        <el-button @click="edit"
-                   class="el-icon-edit icon-cursor"
-                   size="mini"
-                   title="编辑"
-                   type="primary"
-                   v-show="editicon">编辑</el-button>
-      </div>
-    </el-row> -->
-
     <!-- 信息编辑 -->
     <template v-if="editpanel">
       <div class="edit">
@@ -22,17 +10,21 @@
           <el-form-item label="专题名称"
                         prop="titile">
             <el-input placeholder="请填写单位名称"
-                      v-model="form.title"></el-input>
+                      v-model="form.title"
+                      clearable></el-input>
           </el-form-item>
 
           <el-form-item label="专题类型">
-            <el-select placeholder="专题类型"
-                       v-model="form.projectType">
-              <el-option :key="item.code"
-                         :label="item.name"
-                         :value="item.code"
-                         v-for="item in this.$store.state.projectTypes"></el-option>
-            </el-select>
+            <el-col :span="5">
+              <el-select placeholder="专题类型"
+                         v-model="form.projectType"
+                         clearable>
+                <el-option :key="item.code"
+                           :label="item.name"
+                           :value="item.code"
+                           v-for="item in projectTypes"></el-option>
+              </el-select>
+            </el-col>
           </el-form-item>
 
           <el-form-item label="时间范围">
@@ -46,7 +38,7 @@
               </el-form-item>
             </el-col>
             <el-col class="line"
-                    :span="2">-</el-col>
+                    :span="2">至</el-col>
             <el-col :span="11">
               <el-form-item prop="endTime">
                 <el-date-picker type="date"
@@ -58,10 +50,24 @@
             </el-col>
           </el-form-item>
 
-          <el-form-item label="活动地点"
+          <el-form-item label="地点"
                         prop="siteWrite">
-            <el-input placeholder="请填写单位地址"
-                      v-model="form.siteWrite"></el-input>
+            <el-col :span="5">
+              <el-select placeholder="省、直辖市、自治区"
+                         v-model="form.siteArea"
+                         clearable>
+                <el-option :key="item.id"
+                           :label="item.name"
+                           :value="item.code"
+                           v-for="item in siteAreas"></el-option>
+              </el-select>
+            </el-col>
+            <el-col :span="18"
+                    :offset="1">
+              <el-input placeholder="请填写单位地址"
+                        v-model="form.siteWrite"
+                        clearable></el-input>
+            </el-col>
           </el-form-item>
 
           <el-form-item label="专题简介"
@@ -69,7 +75,8 @@
             <el-input :autosize="{ minRows: 5, maxRows: 10}"
                       placeholder="请填写专题简介"
                       type="textarea"
-                      v-model="form.description"></el-input>
+                      v-model="form.description"
+                      clearable></el-input>
           </el-form-item>
           <el-form-item label="封面图片"
                         prop="url">
@@ -103,15 +110,15 @@
         </el-row>
         <el-row>
           <label class="label-style">专题类型:</label>
-          <span>{{this.data.projectType}}</span>
+          <span>{{this.data.projectType|getTypeNameBycode(projectTypes)}}</span>
         </el-row>
         <el-row>
           <label class="label-style">时间范围:</label>
           <span>{{this.data.startTime +'至'+this.data.endTime}}</span>
         </el-row>
         <el-row>
-          <label class="label-style">活动地点:</label>
-          <span>{{this.data.siteWrite}}</span>
+          <label class="label-style">地点:</label>
+          <span>{{this.siteAreaName}}{{this.data.siteWrite}}</span>
         </el-row>
         <el-row>
           <label class="label-style">专题简介:</label>
@@ -139,14 +146,30 @@ export default {
     return {
       toDetail: {},
       searchParam: { pageNum: 1, pageSize: 10, data: { startTime: '', endTime: '', projectType: '', flag: '', title: '', id: '' } },
-      form: { id: '', title: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', pictureName: '', url: '' },
-      data: { id: '', title: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', pictureName: '', url: '' },
+      form: { id: '', title: '', projectType: '', startTime: '', endTime: '', siteArea: '', siteWrite: '', description: '', pictureName: '', url: '' },
+      data: { id: '', title: '', projectType: '', startTime: '', endTime: '', siteArea: '', siteWrite: '', description: '', pictureName: '', url: '' },
       editpanel: false,
-      editicon: false,
-      imgFilesList: []
+      imgFilesList: [],
+      projectTypes: [],
+      siteAreas: [],
+      siteAreaName: ''
     }
   },
   methods: {
+    // 获取专题类型
+    getprojecttypes () {
+      this.$axios.post('/api/tpictools/getprojecttype', this.searchParam).then(res => {
+        if (res.data.code === '200') this.projectTypes = res.data.data.list
+        this.$store.commit('setProjectTypes', this.projectTypes)
+      })
+    },
+    // 获取省份类型
+    getsiteAreas () {
+      this.$axios.post('/api/tpictools/getprovince', this.searchParam).then(res => {
+        if (res.data.code === '200') this.siteAreas = res.data.data
+        this.$store.commit('setProjectTypes', this.projectTypes)
+      })
+    },
     maxUploadNum (file, fileList) {
       const imgLength = fileList.length
       const uploadBtn = document.getElementsByClassName('el-upload')[0]
@@ -164,15 +187,17 @@ export default {
         const { pictureName: name, url } = res.data
         this.form.url = url
         this.form.pictureName = name
-        // this.imgFilesList = [{ name, url }]
       }
     },
     // 保存 信息
     formOnSubmit () {
       if (this.form.id) {
         // 编辑
+        // 去掉新增的 字串'/api'存储,但又不影响页面展示
+        const editForm = JSON.parse(JSON.stringify(this.form))
+        if (editForm.url.includes('api')) { editForm.url = editForm.url.slice(4) }
         this.$axios
-          .post('/api/tpictools/updateprojectmanage', this.form)
+          .post('/api/tpictools/updateprojectmanage', editForm)
           .then(res => {
             if (res.data.code === '200') {
               this.$message({
@@ -193,7 +218,8 @@ export default {
             if (res.data.code === '200') {
               this.$message({
                 message: '新增成功',
-                type: 'success'
+                type: 'success',
+                customClass: 'message'
               })
               this.$router.push({
                 name: 'SpecialList'
@@ -206,14 +232,15 @@ export default {
     getBaseinfo () {
       this.$axios.post('/api/tpictools/projectmanagelist', this.searchParam).then(res => {
         if (res.data.code === '200') {
-          const { id, title, projectType, startTime, endTime, siteWrite, description, pictureName, url } = res.data.data.list[0]
-          this.data = { id, title, projectType, startTime, endTime, siteWrite, description, pictureName }
+          const { id, title, projectType, startTime, endTime, siteArea, siteWrite, description, pictureName, url } = res.data.data.list[0]
+          const httpUrl = '/api' + url
+          this.data = { id, title, projectType, startTime, endTime, siteArea, siteWrite, description, pictureName, url: httpUrl }
+          // 地点的省份名字回显
+          const currentsiteAreaobj = this.siteAreas.find(item => item.code === siteArea)
+          this.siteAreaName = currentsiteAreaobj.name
           // 时间回显
           this.data.startTime = this.$moment(this.data.startTime).format('YYYY-MM-DD')
           this.data.endTime = this.$moment(this.data.endTime).format('YYYY-MM-DD')
-          // 图片回显
-          this.data.url = 'api' + url
-
           // 修改
           if (this.toDetail.actpoint === 'edit') {
             this.edit()
@@ -237,18 +264,13 @@ export default {
         obj.name = this.form.pictureName
         obj.url = this.form.url
         this.imgFilesList.push(obj)
-        const uploadBtn = document.getElementsByClassName('el-upload')[0]
-        uploadBtn.style.display = 'none'
       }
     }
   },
   mounted () {
     this.toDetail = JSON.parse(sessionStorage.getItem('toDetail'))
-
-    // 新增/编辑--编辑按钮展示
-    // if (this.toDetail.actpoint === 'edit') {
-    //   this.editicon = true
-    // }
+    this.getsiteAreas()
+    this.getprojecttypes()
 
     if (this.toDetail.actpoint === 'edit' && !this.toDetail.instid) {
       // 新增

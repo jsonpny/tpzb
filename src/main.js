@@ -16,6 +16,13 @@ Vue.filter('getTypeNameBycode', function (code, projectTypes) {
   const item = projectTypes.find(item => item.code === code)
   return item.name
 })
+Vue.filter('dateformat', function (dataStr, pattern = 'YYYY-MM-DD') {
+  if (dataStr) {
+    return moment(dataStr).format(pattern)
+  } else {
+    return ''
+  }
+})
 
 new Vue({
   router,

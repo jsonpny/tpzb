@@ -42,7 +42,7 @@
                  class="special-list-form">
           <el-form-item>
             <el-input v-model="searchParam.data.title"
-                      placeholder="请输入专题名称"
+                      placeholder="专题名称"
                       clearable></el-input>
           </el-form-item>
           <el-form-item>
@@ -57,7 +57,7 @@
             </el-date-picker>
           </el-form-item>
           <el-form-item>
-            <el-select placeholder="请选择专题类型"
+            <el-select placeholder="专题类型"
                        v-model="searchParam.data.projectType"
                        clearable>
               <el-option :key="item.code"
@@ -67,7 +67,7 @@
             </el-select>
           </el-form-item>
           <el-form-item>
-            <el-select placeholder="请选择状态"
+            <el-select placeholder="状态"
                        v-model="searchParam.data.flag"
                        clearable>
               <el-option label="关闭"
@@ -95,7 +95,8 @@
                 border
                 highlight-current-row
                 ref="table"
-                size="mini">
+                size="mini"
+                class="special-table">
         <el-table-column :width="40"
                          align="center"
                          show-overflow-tooltip
@@ -124,6 +125,16 @@
                          :width="250"
                          prop="author"
                          show-overflow-tooltip></el-table-column>
+        <el-table-column align="center"
+                         label="创建日期"
+                         :width="250"
+                         prop="createTime"
+                         show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span>{{scope.row.createTime|dateformat}}</span>
+
+          </template>
+        </el-table-column>
 
         <el-table-column align="center"
                          :width="250"
@@ -353,6 +364,9 @@ export default {
   }
   .el-button-group {
     display: block;
+  }
+  .special-table {
+    font-size: 14px;
   }
   .huiyi {
     background-color: #f54646;
