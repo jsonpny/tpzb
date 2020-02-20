@@ -14,7 +14,6 @@ Vue.prototype.$axios = axios
 Vue.config.productionTip = false
 Vue.filter('getTypeNameBycode', function (code, projectTypes) {
   const item = projectTypes.find(item => item.code === code)
-  console.log(item)
   return item.name
 })
 
