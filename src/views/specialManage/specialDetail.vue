@@ -1,20 +1,16 @@
 <template>
   <div class="special-detail">
-    <el-row>
-
+    <!-- <el-row>
       <div class="title">
         <span>专题基本信息</span>
-
         <el-button @click="edit"
                    class="el-icon-edit icon-cursor"
                    size="mini"
                    title="编辑"
                    type="primary"
                    v-show="editicon">编辑</el-button>
-
       </div>
-
-    </el-row>
+    </el-row> -->
 
     <!-- 信息编辑 -->
     <template v-if="editpanel">
@@ -62,7 +58,7 @@
             </el-col>
           </el-form-item>
 
-          <el-form-item label="专题地点"
+          <el-form-item label="活动地点"
                         prop="siteWrite">
             <el-input placeholder="请填写单位地址"
                       v-model="form.siteWrite"></el-input>
@@ -77,19 +73,19 @@
           </el-form-item>
           <el-form-item label="封面图片"
                         prop="url">
-            <el-upload class="avatar-uploader"
+            <el-upload ref="upload"
+                       class="upload"
+                       list-type="picture-card"
                        action="/api/tpictools/uploadprojectmanage"
-                       :show-file-list="false"
-                       :on-success="handleAvatarSuccess">
-              <img v-if="form.url"
-                   :src="form.url"
-                   class="avatar">
-              <i v-else
-                 class="el-icon-plus avatar-uploader-icon"></i>
+                       :file-list="imgFilesList"
+                       :on-success="handleUploadrSuccess"
+                       :on-change="maxUploadNum"
+                       :on-remove="removeImg"
+                       :limit="1"
+                       accept=".jpg,.jpeg,.png,.bmp,.gif">
+              <i class="el-icon-plus"></i>
             </el-upload>
-
           </el-form-item>
-
           <el-form-item align="center">
             <el-button @click="formOnSubmit"
                        type="primary">保存</el-button>
@@ -111,22 +107,25 @@
         </el-row>
         <el-row>
           <label class="label-style">时间范围:</label>
-          <span>{{this.data.startTime}}</span>
-          <span>{{'-'+this.data.endTime}}</span>
+          <span>{{this.data.startTime +'至'+this.data.endTime}}</span>
         </el-row>
         <el-row>
-          <label class="label-style">专题地点:</label>
+          <label class="label-style">活动地点:</label>
           <span>{{this.data.siteWrite}}</span>
         </el-row>
         <el-row>
           <label class="label-style">专题简介:</label>
-          <pre>{{this.data.description}}</pre>
+          <span>{{this.data.description}}</span>
         </el-row>
         <el-row>
           <label class="label-style">封面图片:</label>
           <img v-if="data.url"
-               src="/api/idcardImgs/加油武汉.jpg"
+               :src="data.url"
                class="avatar">
+        </el-row>
+        <el-row class="goback">
+          <el-button type="primary"
+                     @click="formOnCancle">返回</el-button>
         </el-row>
       </div>
     </template>
@@ -139,17 +138,34 @@ export default {
   data () {
     return {
       toDetail: {},
-      searchParam: { pageNum: 1, pageSize: 10, data: { startTime: '', endTime: '', projectType: '', status: '', title: '', id: '' } },
-      form: { id: '', title: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', pictureName: '', url: '/api/idcardImgs/e9fed86e-03b0-45e0-990b-04458a3cffb8QQ图片20200211152410.png' },
-      data: { id: '', title: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', pictureName: '', url: '/api/idcardImgs/加油武汉.jpg' },
+      searchParam: { pageNum: 1, pageSize: 10, data: { startTime: '', endTime: '', projectType: '', flag: '', title: '', id: '' } },
+      form: { id: '', title: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', pictureName: '', url: '' },
+      data: { id: '', title: '', projectType: '', startTime: '', endTime: '', siteWrite: '', description: '', pictureName: '', url: '' },
       editpanel: false,
-      editicon: false
+      editicon: false,
+      imgFilesList: []
     }
   },
   methods: {
-    handleAvatarSuccess (res, file) {
-      this.form.url = URL.createObjectURL(file.raw)
-      this.form.pictureName = file.raw.name
+    maxUploadNum (file, fileList) {
+      const imgLength = fileList.length
+      const uploadBtn = document.getElementsByClassName('el-upload')[0]
+      if (imgLength >= 1) {
+        uploadBtn.style.display = 'none'
+      }
+    },
+    removeImg (file, fileList) {
+      const uploadBtn = document.getElementsByClassName('el-upload')[0]
+      uploadBtn.style.display = 'block'
+    },
+
+    handleUploadrSuccess (res, file, fileList) {
+      if (res.code === '200') {
+        const { pictureName: name, url } = res.data
+        this.form.url = url
+        this.form.pictureName = name
+        // this.imgFilesList = [{ name, url }]
+      }
     },
     // 保存 信息
     formOnSubmit () {
@@ -159,13 +175,13 @@ export default {
           .post('/api/tpictools/updateprojectmanage', this.form)
           .then(res => {
             if (res.data.code === '200') {
-              this.data = JSON.parse(JSON.stringify(this.form))
               this.$message({
                 message: '编辑成功',
                 type: 'success'
               })
-              this.editpanel = false
-              this.editicon = true
+              this.$router.push({
+                name: 'SpecialList'
+              })
             }
           })
       } else {
@@ -175,14 +191,13 @@ export default {
           .post('/api/tpictools/addprojectmanage', this.form)
           .then(res => {
             if (res.data.code === '200') {
-              this.data = JSON.parse(JSON.stringify(this.form))
-              this.data.id = this.form.id = res.data.data
               this.$message({
                 message: '新增成功',
                 type: 'success'
               })
-              this.editpanel = false
-              this.editicon = true
+              this.$router.push({
+                name: 'SpecialList'
+              })
             }
           })
       }
@@ -192,39 +207,66 @@ export default {
       this.$axios.post('/api/tpictools/projectmanagelist', this.searchParam).then(res => {
         if (res.data.code === '200') {
           const { id, title, projectType, startTime, endTime, siteWrite, description, pictureName, url } = res.data.data.list[0]
-          this.data = { id, title, projectType, startTime, endTime, siteWrite, description, pictureName, url }
+          this.data = { id, title, projectType, startTime, endTime, siteWrite, description, pictureName }
+          // 时间回显
           this.data.startTime = this.$moment(this.data.startTime).format('YYYY-MM-DD')
           this.data.endTime = this.$moment(this.data.endTime).format('YYYY-MM-DD')
+          // 图片回显
+          this.data.url = 'api' + url
+
+          // 修改
+          if (this.toDetail.actpoint === 'edit') {
+            this.edit()
+          }
         }
       })
     },
-    // 取消 保存单位信息
+    // 取消 编辑信息
     formOnCancle () {
-      this.editpanel = false
-      this.editicon = true
+      this.$router.push({
+        name: 'SpecialList'
+      })
     },
-    // 编辑按钮
+    // 编辑页展示
     edit () {
       this.editpanel = true
-      this.editicon = false
       this.form = JSON.parse(JSON.stringify(this.data)) // clone到form，避免双向绑定
+      // 图片回显
+      if (this.form.url) {
+        const obj = { name: '', url: '' }
+        obj.name = this.form.pictureName
+        obj.url = this.form.url
+        this.imgFilesList.push(obj)
+        const uploadBtn = document.getElementsByClassName('el-upload')[0]
+        uploadBtn.style.display = 'none'
+      }
     }
   },
   mounted () {
     this.toDetail = JSON.parse(sessionStorage.getItem('toDetail'))
 
     // 新增/编辑--编辑按钮展示
-    if (this.toDetail.actpoint === 'edit') {
-      this.editicon = true
-    }
-    // 默认为查看状态
-    if (!this.toDetail.instid) {
-      // 新增--编辑页展示
+    // if (this.toDetail.actpoint === 'edit') {
+    //   this.editicon = true
+    // }
+
+    if (this.toDetail.actpoint === 'edit' && !this.toDetail.instid) {
+      // 新增
       this.edit()
-    } else {
-      // 编辑--查看页展示
+    } else if (this.toDetail.actpoint === 'show' && this.toDetail.instid) {
+      // 查看
       this.searchParam.data.id = this.toDetail.instid
       this.getBaseinfo()
+    } else if (this.toDetail.actpoint === 'edit' && this.toDetail.instid) {
+      // 修改
+      this.searchParam.data.id = this.toDetail.instid
+      this.getBaseinfo()
+    }
+  },
+  updated () {
+    if (this.form.url) {
+      const uploadBtn = document.getElementsByClassName('el-upload')[0]
+      uploadBtn.style.display = 'none'
     }
   }
 }
@@ -248,45 +290,22 @@ export default {
     }
   }
   .el-form {
-    padding: 40px 20% 0 40px;
+    padding: 20px 20% 0 40px;
     .el-select {
       width: 100%;
     }
-    .avatar-uploader {
+    .upload {
       text-align: left;
-      width: 178px;
-      border: 1px dashed #d9d9d9;
-      border-radius: 6px;
-    }
-    .avatar-uploader .el-upload {
-      border: 1px dashed #d9d9d9;
-      border-radius: 6px;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-    }
-    .avatar-uploader .el-upload:hover {
-      border-color: #409eff;
-    }
-    .avatar-uploader-icon {
-      font-size: 28px;
-      color: #8c939d;
-      width: 178px;
-      height: 178px;
-      line-height: 178px;
-      text-align: center;
-    }
-    .avatar {
-      width: 178px;
-      height: 178px;
-      display: block;
     }
   }
   .content-style {
     text-align: left;
-    padding: 40px 20% 0 40px;
+    padding: 20px 20% 0 40px;
     .el-row {
       margin-bottom: 22px;
+      &.goback {
+        text-align: center;
+      }
       .label-style {
         float: left;
         text-align: right;

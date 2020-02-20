@@ -42,7 +42,8 @@
                  class="special-list-form">
           <el-form-item>
             <el-input v-model="searchParam.data.title"
-                      placeholder="请输入专题名称"></el-input>
+                      placeholder="请输入专题名称"
+                      clearable></el-input>
           </el-form-item>
           <el-form-item>
             <el-date-picker v-model="dateRange"
@@ -51,12 +52,14 @@
                             range-separator="至"
                             start-placeholder="开始日期"
                             end-placeholder="结束日期"
-                            class="dateRange">
+                            class="dateRange"
+                            clearable>
             </el-date-picker>
           </el-form-item>
           <el-form-item>
             <el-select placeholder="请选择专题类型"
-                       v-model="searchParam.data.projectType">
+                       v-model="searchParam.data.projectType"
+                       clearable>
               <el-option :key="item.code"
                          :label="item.name"
                          :value="item.code"
@@ -65,17 +68,19 @@
           </el-form-item>
           <el-form-item>
             <el-select placeholder="请选择状态"
-                       v-model="searchParam.data.status">
+                       v-model="searchParam.data.flag"
+                       clearable>
               <el-option label="关闭"
                          value="0"></el-option>
               <el-option label="开放"
-                         value="1"></el-option>
+                         value="1"
+                         clearable></el-option>
             </el-select>
           </el-form-item>
           <el-form-item>
             <el-button type="primary"
                        size="mini"
-                       @click="getList">查询</el-button>
+                       @click="getList"><i class="el-icon-search"></i></el-button>
           </el-form-item>
 
         </el-form>
@@ -90,8 +95,7 @@
                 border
                 highlight-current-row
                 ref="table"
-                stripe
-                style="width: 100%">
+                size="mini">
         <el-table-column :width="40"
                          align="center"
                          show-overflow-tooltip
@@ -101,34 +105,34 @@
                          label="序号"
                          show-overflow-tooltip
                          type="index"></el-table-column>
-        <el-table-column align="center"
-                         label="专题"
+        <el-table-column label="专题"
                          prop="title"
-                         show-overflow-tooltip></el-table-column>
-        <el-table-column align="center"
-                         label="类型"
-                         :width="200"
-                         prop="projectType"
-                         show-overflow-tooltip></el-table-column>
+                         show-overflow-tooltip>
+          <template slot-scope="scope">
+            <span :class="{'001':'huiyi','002':'caifang','003':'huodong','004':'jiangzuo'}[scope.row.projectType]">{{scope.row.projectType|getTypeNameBycode(projectTypes) }}</span>
+            <el-button @click="show(scope.row)"
+                       type="text">{{scope.row.title}}</el-button>
+          </template>
+        </el-table-column>
         <el-table-column align="center"
                          label="图片数量"
-                         :width="200"
+                         :width="250"
                          prop="countPic"
                          show-overflow-tooltip></el-table-column>
         <el-table-column align="center"
                          label="创建人"
-                         :width="200"
+                         :width="250"
                          prop="author"
                          show-overflow-tooltip></el-table-column>
 
         <el-table-column align="center"
-                         :width="200"
+                         :width="250"
                          filter-placement="bottom-end"
-                         label="开放/关闭"
-                         prop="status"
+                         label="关闭/开放"
+                         prop="flag"
                          show-overflow-tooltip>
           <template slot-scope="scope">
-            <el-switch v-model="scope.row.status"
+            <el-switch v-model="scope.row.flag"
                        @change="handleOpenOrClosed(scope.$index, scope.row)">
             </el-switch>
 
@@ -154,18 +158,7 @@ export default {
   name: 'SpecialList',
   data () {
     return {
-      searchParam: {
-        pageNum: 1,
-        pageSize: 10,
-        data: {
-          startTime: '',
-          endTime: '',
-          projectType: '',
-          status: '',
-          title: '',
-          id: ''
-        }
-      },
+      searchParam: { pageNum: 1, pageSize: 10, data: { startTime: '', endTime: '', projectType: '', flag: '', title: '', id: '' } },
       page: { pageNum: 1, pageSize: 10, total: 0, list: [] },
       dateRange: '',
       projectTypes: [],
@@ -188,10 +181,24 @@ export default {
     },
     // 加载机构列表
     getList () {
-      this.searchParam.data.startTime = this.dateRange[0]
-      this.searchParam.data.endTime = this.dateRange[1]
+      if (this.dateRange) {
+        this.searchParam.data.startTime = this.dateRange[0]
+        this.searchParam.data.endTime = this.dateRange[1]
+      } else {
+        this.searchParam.data.startTime = this.searchParam.data.endTime = ''
+      }
       this.$axios.post('/api/tpictools/projectmanagelist', this.searchParam).then(res => {
-        if (res.data.code === '200') this.page = res.data.data
+        if (res.data.code === '200') {
+          const PageMid = res.data.data
+          PageMid.list.forEach(item => {
+            if (item.flag === '1') {
+              item.flag = true
+            } else {
+              item.flag = false
+            }
+          })
+          this.page = PageMid
+        }
       })
     },
 
@@ -220,6 +227,16 @@ export default {
         name: 'specialDetail'
       })
     },
+    show (row) {
+      const p = {
+        actpoint: 'show',
+        instid: row.id
+      }
+      sessionStorage.setItem('toDetail', JSON.stringify(p))
+      this.$router.push({
+        name: 'specialDetail'
+      })
+    },
     // 删除
     del () {
       if (this.multipleSelection.length < 1) {
@@ -242,17 +259,15 @@ export default {
         }
       })
     },
-    // 启用/禁用
+    // 点击本专题 开放/关闭
     handleOpenOrClosed (index, row) {
-      let { uuid, isused: isUsed } = row
-      isUsed = isUsed === '0' ? '1' : '0'
-      const objData = { uuid, isUsed }
+      let { id, flag } = row
+      flag = flag - 0
+      const objData = { id, flag }
       this.$axios
-        .post('/api/tpictools/deleteprojectmanage', objData)
+        .post('/api/tpictools/projectmanageshow', objData)
         .then(res => {
-          if (res.data.code === 0) {
-            this.getList()
-            this.getOrgTree()
+          if (res.data.code === '200') {
             this.$message({
               message: '操作成功',
               type: 'success'
@@ -262,20 +277,20 @@ export default {
     },
     // 关闭
     closeSpecial () {
-      if (this.multipleSelection.length !== 1) {
-        this.$message.info('请选择一条记录进行编辑操作！')
+      if (this.multipleSelection.length !== 1 && this.multipleSelection[0].flag === true) {
+        this.$message.info('请选择一条开放的记录进行操作！')
         return false
       }
       this.$axios
-        .post('/api' + this.$route.path + 'closeSpecial', {
-          uuid: this.multipleSelection[0].uuid
+        .post('/api/tpictools/projectmanageshow', {
+          id: this.multipleSelection[0].id,
+          flag: !this.multipleSelection[0].flag - 0
         })
         .then(res => {
-          if (res.data.code === 0) {
+          if (res.data.code === '200') {
             this.getList()
-            this.getOrgTree()
             this.$message({
-              message: '上移成功',
+              message: '关闭成功',
               type: 'success'
             })
           }
@@ -283,20 +298,20 @@ export default {
     },
     // 开放
     openSpecial () {
-      if (this.multipleSelection.length !== 1) {
-        this.$message.info('请选择一条记录进行编辑操作！')
+      if (this.multipleSelection.length !== 1 && this.multipleSelection[0].flag === false) {
+        this.$message.info('请选择一条关闭的记录进行操作！')
         return false
       }
       this.$axios
-        .post('/api' + this.$route.path + 'openSpecial', {
-          uuid: this.multipleSelection[0].uuid
+        .post('/api/tpictools/projectmanageshow', {
+          id: this.multipleSelection[0].id,
+          flag: !this.multipleSelection[0].flag - 0
         })
         .then(res => {
-          if (res.data.code === 0) {
+          if (res.data.code === '200') {
             this.getList()
-            this.getOrgTree()
             this.$message({
-              message: '下移成功',
+              message: '开放成功',
               type: 'success'
             })
           }
@@ -338,6 +353,39 @@ export default {
   }
   .el-button-group {
     display: block;
+  }
+  .huiyi {
+    background-color: #f54646;
+    color: #fff;
+    font-size: 12px;
+    padding: 2px;
+    margin-right: 8px;
+    border-radius: 3px;
+  }
+  .caifang {
+    background-color: #f54646;
+    color: #fff;
+    font-size: 12px;
+    padding: 2px;
+    margin-right: 8px;
+    border-radius: 3px;
+  }
+  .huodong {
+    background-color: #99d5f9;
+    color: #fff;
+    font-size: 12px;
+    padding: 2px;
+    margin-right: 8px;
+    border-radius: 3px;
+  }
+
+  .jiangzuo {
+    background-color: #f29c9f;
+    color: #fff;
+    font-size: 12px;
+    padding: 2px;
+    margin-right: 8px;
+    border-radius: 3px;
   }
 }
 </style>
