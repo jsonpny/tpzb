@@ -9,18 +9,20 @@
         <el-scrollbar class="default-scrollbar"
                       wrap-class="default-scrollbar__wrap"
                       view-class="default-scrollbar__view">
-          <el-menu default-active="1"
+          <el-menu :default-active="menuIndex"
                    class="el-menu-vertical-demo"
                    @select="handleSelect"
                    background-color="#273238"
                    text-color="#fff"
-                   active-text-color="#009fff">
+                   active-text-color="#fff">
 
-            <el-menu-item index="1">
+            <el-menu-item index="1"
+                          style="margin-top: 15px;">
               <i class="el-icon-document"></i>
               <span slot="title">专题管理</span>
             </el-menu-item>
-            <el-menu-item index="2">
+            <el-menu-item index="2"
+                          style="margin-top: 15px;">
               <i class="el-icon-picture"></i>
               <span slot="title">图片管理</span>
             </el-menu-item>
@@ -32,7 +34,7 @@
         <el-scrollbar class="default-scrollbar"
                       wrap-class="default-scrollbar__wrap"
                       view-class="default-scrollbar__view">
-          <router-view />
+          <router-view @menu="menu" />
         </el-scrollbar>
 
       </el-main>
@@ -41,11 +43,23 @@
   </div>
 </template>
 <script>
+// eslint-disable-next-line
+/* eslint-disable */
 export default {
+  data () {
+    return {
+      menuIndex: '1'
+    }
+  },
   methods: {
     handleSelect (key) {
       if (key === '1') this.$router.push({ name: 'SpecialList' })
       if (key === '2') this.$router.push({ name: 'picturesList' })
+    },
+    menu (menuName) {
+      if (menuName === "picturesList") this.menuIndex = "2"
+      if (menuName === "SpecialList") this.menuIndex = "1"
+      console.log(menuName)
     }
   }
 }
@@ -78,8 +92,8 @@ export default {
           i {
             color: #fff;
           }
-          &.is-active i {
-            color: #009fff;
+          &.is-active {
+            border-left: 3px solid rgb(0, 159, 255);
           }
         }
       }

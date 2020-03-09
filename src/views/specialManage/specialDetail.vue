@@ -9,7 +9,7 @@
 
           <el-form-item label="专题名称"
                         prop="titile">
-            <el-input placeholder="请填写单位名称"
+            <el-input placeholder="请填写专题名称"
                       v-model="form.title"
                       clearable></el-input>
           </el-form-item>
@@ -27,7 +27,7 @@
             </el-col>
           </el-form-item>
 
-          <el-form-item label="时间范围">
+          <el-form-item label="时间">
             <el-col :span="11">
               <el-form-item prop="startTime">
                 <el-date-picker type="date"
@@ -83,7 +83,7 @@
             <el-upload ref="upload"
                        class="upload"
                        list-type="picture-card"
-                       action="/api/tpictools/uploadprojectmanage"
+                       action="/piclive/tpictools/uploadprojectmanage"
                        :file-list="imgFilesList"
                        :on-success="handleUploadrSuccess"
                        :on-change="maxUploadNum"
@@ -113,7 +113,7 @@
           <span>{{this.data.projectType|getTypeNameBycode(projectTypes)}}</span>
         </el-row>
         <el-row>
-          <label class="label-style">时间范围:</label>
+          <label class="label-style">时间:</label>
           <span>{{this.data.startTime +'至'+this.data.endTime}}</span>
         </el-row>
         <el-row>
@@ -150,26 +150,16 @@ export default {
       data: { id: '', title: '', projectType: '', startTime: '', endTime: '', siteArea: '', siteWrite: '', description: '', pictureName: '', url: '' },
       editpanel: false,
       imgFilesList: [],
-      projectTypes: [],
       siteAreas: [],
       siteAreaName: ''
     }
   },
+  computed: {
+    projectTypes () {
+      return this.$store.state.projectTypes
+    }
+  },
   methods: {
-    // 获取专题类型
-    getprojecttypes () {
-      this.$axios.post('/api/tpictools/getprojecttype', this.searchParam).then(res => {
-        if (res.data.code === '200') this.projectTypes = res.data.data.list
-        this.$store.commit('setProjectTypes', this.projectTypes)
-      })
-    },
-    // 获取省份类型
-    getsiteAreas () {
-      this.$axios.post('/api/tpictools/getprovince', this.searchParam).then(res => {
-        if (res.data.code === '200') this.siteAreas = res.data.data
-        this.$store.commit('setProjectTypes', this.projectTypes)
-      })
-    },
     maxUploadNum (file, fileList) {
       const imgLength = fileList.length
       const uploadBtn = document.getElementsByClassName('el-upload')[0]
@@ -193,11 +183,9 @@ export default {
     formOnSubmit () {
       if (this.form.id) {
         // 编辑
-        // 去掉新增的 字串'/api'存储,但又不影响页面展示
         const editForm = JSON.parse(JSON.stringify(this.form))
-        if (editForm.url.includes('api')) { editForm.url = editForm.url.slice(4) }
         this.$axios
-          .post('/api/tpictools/updateprojectmanage', editForm)
+          .post('/piclive/tpictools/updateprojectmanage', editForm)
           .then(res => {
             if (res.data.code === '200') {
               this.$message({
@@ -213,7 +201,7 @@ export default {
         // 新增
         delete this.form.id
         this.$axios
-          .post('/api/tpictools/addprojectmanage', this.form)
+          .post('/piclive/tpictools/addprojectmanage', this.form)
           .then(res => {
             if (res.data.code === '200') {
               this.$message({
@@ -230,10 +218,11 @@ export default {
     },
     // 查询某个机构信息
     getBaseinfo () {
-      this.$axios.post('/api/tpictools/projectmanagelist', this.searchParam).then(res => {
+      this.$axios.post('/piclive/tpictools/projectmanagelist', this.searchParam).then(res => {
         if (res.data.code === '200') {
           const { id, title, projectType, startTime, endTime, siteArea, siteWrite, description, pictureName, url } = res.data.data.list[0]
-          const httpUrl = '/api' + url
+          // 图片地址处理
+          const httpUrl = url
           this.data = { id, title, projectType, startTime, endTime, siteArea, siteWrite, description, pictureName, url: httpUrl }
           // 地点的省份名字回显
           const currentsiteAreaobj = this.siteAreas.find(item => item.code === siteArea)
@@ -269,21 +258,24 @@ export default {
   },
   mounted () {
     this.toDetail = JSON.parse(sessionStorage.getItem('toDetail'))
-    this.getsiteAreas()
-    this.getprojecttypes()
 
-    if (this.toDetail.actpoint === 'edit' && !this.toDetail.instid) {
-      // 新增
-      this.edit()
-    } else if (this.toDetail.actpoint === 'show' && this.toDetail.instid) {
-      // 查看
-      this.searchParam.data.id = this.toDetail.instid
-      this.getBaseinfo()
-    } else if (this.toDetail.actpoint === 'edit' && this.toDetail.instid) {
-      // 修改
-      this.searchParam.data.id = this.toDetail.instid
-      this.getBaseinfo()
-    }
+    // 先获区省份信息
+    this.$axios.post('/piclive/tpictools/getprovince', this.searchParam).then(res => {
+      if (res.data.code === '200') this.siteAreas = res.data.data
+    }).then(() => {
+      if (this.toDetail.actpoint === 'edit' && !this.toDetail.instid) {
+        // 新增
+        this.edit()
+      } else if (this.toDetail.actpoint === 'show' && this.toDetail.instid) {
+        // 查看
+        this.searchParam.data.id = this.toDetail.instid
+        this.getBaseinfo()
+      } else if (this.toDetail.actpoint === 'edit' && this.toDetail.instid) {
+        // 修改
+        this.searchParam.data.id = this.toDetail.instid
+        this.getBaseinfo()
+      }
+    })
   },
   updated () {
     if (this.form.url) {

@@ -5,10 +5,11 @@ module.exports = {
     open: true,
     port: 8080,
     proxy: {
-      '/api': {
-        target: 'http://172.16.0.60:8080',
+      '/piclive': {
+        target: 'http://172.16.0.61:8080',
+        // target: 'http://view.jingjiribao.cn/piclive',
         changeOrigin: true,
-        pathRewrite: { '^/api': '' }
+        pathRewrite: { '^/piclive': '' }
       }
     }
   }

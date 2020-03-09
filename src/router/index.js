@@ -1,3 +1,4 @@
+/* eslint-disable */
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import SpecialList from '@/views/specialManage/specialList.vue'
@@ -18,7 +19,12 @@ const routes = [
   {
     path: '/picturesList',
     name: 'picturesList',
-    component: () => import(/* webpackChunkName: "picturesList" */ '@/views/specialManage/specialDetail.vue')
+    component: () => import(/* webpackChunkName: "picturesList" */ '@/views/pictureManage/pictureList.vue')
+  },
+  {
+    path: '/shareList/:id',
+    name: 'shareList',
+    component: () => import(/* webpackChunkName: "shareList" */ '@/views/shareManage/shareList.vue')
   }
 ]
 

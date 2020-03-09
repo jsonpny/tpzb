@@ -179,17 +179,17 @@ export default {
     }
   },
   created () {
-    this.getprojecttypes()
-    this.getList()
+    // 获取专题类型
+    this.$axios.post('/piclive/tpictools/getprojecttype', this.searchParam).then(res => {
+      if (res.data.code === '200') {
+        this.projectTypes = res.data.data.list
+        this.$store.commit('setProjectTypes', this.projectTypes)
+      }
+    }).then(() => {
+      this.getList()
+    })
   },
   methods: {
-    // 获取专题类型
-    getprojecttypes () {
-      this.$axios.post('/api/tpictools/getprojecttype', this.searchParam).then(res => {
-        if (res.data.code === '200') this.projectTypes = res.data.data.list
-        this.$store.commit('setProjectTypes', this.projectTypes)
-      })
-    },
     // 加载机构列表
     getList () {
       if (this.dateRange) {
@@ -198,7 +198,7 @@ export default {
       } else {
         this.searchParam.data.startTime = this.searchParam.data.endTime = ''
       }
-      this.$axios.post('/api/tpictools/projectmanagelist', this.searchParam).then(res => {
+      this.$axios.post('/piclive/tpictools/projectmanagelist', this.searchParam).then(res => {
         if (res.data.code === '200') {
           const PageMid = res.data.data
           PageMid.list.forEach(item => {
@@ -260,7 +260,7 @@ export default {
         return obj
       })
       const obj = { projectManageList: arr }
-      this.$axios.post('/api/tpictools/deleteprojectmanage', obj).then(res => {
+      this.$axios.post('/piclive/tpictools/deleteprojectmanage', obj).then(res => {
         if (res.data.code === '200') {
           this.getList()
           this.$message({
@@ -276,7 +276,7 @@ export default {
       flag = flag - 0
       const objData = { id, flag }
       this.$axios
-        .post('/api/tpictools/projectmanageshow', objData)
+        .post('/piclive/tpictools/projectmanageshow', objData)
         .then(res => {
           if (res.data.code === '200') {
             this.$message({
@@ -293,7 +293,7 @@ export default {
         return false
       }
       this.$axios
-        .post('/api/tpictools/projectmanageshow', {
+        .post('/piclive/tpictools/projectmanageshow', {
           id: this.multipleSelection[0].id,
           flag: !this.multipleSelection[0].flag - 0
         })
@@ -314,7 +314,7 @@ export default {
         return false
       }
       this.$axios
-        .post('/api/tpictools/projectmanageshow', {
+        .post('/piclive/tpictools/projectmanageshow', {
           id: this.multipleSelection[0].id,
           flag: !this.multipleSelection[0].flag - 0
         })
